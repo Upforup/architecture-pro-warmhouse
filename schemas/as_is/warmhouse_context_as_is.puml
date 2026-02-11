@@ -1,4 +1,4 @@
-@startuml Ctx
+@startuml warmhouse_context_as_is
 title Warmhouse Context Diagram
 
 top to bottom direction
