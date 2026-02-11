@@ -32,9 +32,9 @@ jobs:
 
     - name: Commit Diagrams
       run: |
-        git config --local user.email "eugeni.ryabov@gmail.com"
-        git config --local user.name "eugeni.ryabov"
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
         git add schemas/**/*.png
         git commit -m "Automated diagram generation"
-        git push origin warmhouse
+        git push origin ${{ github.ref }}
       if: always()
