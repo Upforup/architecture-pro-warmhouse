@@ -1,23 +1,43 @@
-name: generate plantuml
-on: 
+name: PlantUML Diagrams
+
+on:
   push:
-      branches:
-        - main
-        - warmhouse
+    branches:
+      - main
+      - warmhouse
+  pull_request:
+    branches:
+      - main
+
 jobs:
-  generate_plantuml:
+  generate-diagrams:
     runs-on: ubuntu-latest
-    name: plantuml
+
     steps:
-    - name: checkout
-      uses: actions/checkout@v1
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up Java
+      uses: actions/setup-java@v5
       with:
-        fetch-depth: 1
-    - name: plantuml
-      id: plantuml
-      uses: grassedge/generate-plantuml-action@v1.5
-      with:
-        path: schemas
-        message: "Render PlantUML files"
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        distribution: 'temurin' 
+        java-version: '21'
+
+    - name: Install PlantUML
+      run: sudo apt-get install plantuml
+
+    - name: Generate Diagrams
+      run: |
+        plantuml schemas/context/*.puml
+        plantuml schemas/container/*.puml
+        plantuml schemas/component/*.puml
+        plantuml schemas/code/*.puml
+
+    - name: Commit Diagrams
+      run: |
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        git add schemas/**/*.png
+        git commit -m "Automated diagram generation"
+        git push origin main
+      if: success()
