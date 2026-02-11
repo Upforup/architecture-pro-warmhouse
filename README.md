@@ -57,7 +57,27 @@
 Диаграмма контекста в модели C4.
 
 
-![Context AS IS](/schemas/context/as_is.png)
+```plantuml:schemas/warmhouse-asis-context
+title Warmhouse Context Diagram
+
+top to bottom direction
+
+!includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Component.puml
+
+Person(user, "User", "A user of the warmhouse smart_home")
+Person(admin, "Admin", "Admin of the warmhouse smart_home")
+
+System(smart_home, "Smart_home System", "Sensor management")
+System(sensor, "Sensor", "temperature sensor")
+
+Rel(user, smart_home, "Reads temperature (get)")
+Rel(user, smart_home, "Turns sensor on/off (update value)")
+Rel(admin, smart_home, "sensor installation (create/delete)")
+
+Rel(smart_home,sensor,"Reads temperature")
+Rel(sensor,smart_home,"updates state? (update)")
+```
+![](./schemas/warmhouse-asis-context.svg)
 
 
 # Задание 2. Проектирование микросервисной архитектуры
