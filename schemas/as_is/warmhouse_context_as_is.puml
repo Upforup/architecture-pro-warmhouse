@@ -6,16 +6,6 @@ top to bottom direction
 !include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
 
 Person(user, "User", "A user of the warmhouse smart_home")
-Person(admin, "Admin", "Admin of the warmhouse smart_home")
 
-System(smart_home, "Smart_home System", "Sensor management")
-System(sensor, "Sensor", "temperature sensor")
-
-Rel(user, smart_home, "Reads temperature (get)")
-Rel(user, smart_home, "Turns sensor on/off (update value)")
-Rel(admin, smart_home, "sensor installation (create/delete)")
-
-Rel(smart_home,sensor,"Reads temperature")
-Rel(sensor,smart_home,"updates state? (update)")
 
 @enduml
