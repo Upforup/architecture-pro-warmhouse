@@ -25,7 +25,7 @@ System_Boundary(wh, "WarmHouse SAAS") {
     }
 
     Container(rulesEngineApp, "Rule Engine", "", "")
-    ContainerQueue(tmQ, "Device Telemetry Q", "MQTT", "")
+    ContainerQueue(tmQ, "Device Telemetry Q")
     ContainerQueue(appEventsQ, "App Events Q", "Redis Streams")
     ContainerQueue(commandQ, "Command Q", "Redis Streams")
 }
