@@ -30,7 +30,6 @@ jobs:
     - name: Generate Diagrams
       run: |
         plantuml schemas/as_is/*.puml
-        plantuml schemas/to_be/*.puml
 
     - name: Commit Diagrams
       run: |
