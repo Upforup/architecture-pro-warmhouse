@@ -25,13 +25,13 @@ System_Boundary(wh, "WarmHouse SAAS") {
     }
 
     Container(rulesEngineApp, "Rule Engine", "", "")
-    ContainerQueue(deviceTelemetryQ, "Device Telemetry Q", "MQTT", "")
+    ContainerQueue(tmQ, "Device Telemetry Q", "MQTT", "")
     ContainerQueue(appEventsQ, "App Events Q", "Redis Streams")
     ContainerQueue(commandQ, "Command Q", "Redis Streams")
 }
 
 Rel(user, api, "uses", "REST")
-Rel(device, deviceTelemetryQ, "publishes telemetry")
+Rel(device, tmQ, "publishes telemetry")
 Rel(api, usersApp, "registers/authenticates", "REST")
 Rel(api, devMgmtApp, "adds/configures device", "REST")
 Rel(api, usersApp, "configures subscription", "REST")
@@ -49,9 +49,9 @@ Rel(rulesEngineApp, devMgmtApp, "reads device info for rule evaluation", "")
 Rel(rulesEngineApp, usersApp, "reads user info for rule evaluation", "")
 
 Rel(devMgmtApp, commandQ, "subscribes to command events")
-Rel(rulesEngineApp, deviceTelemetryQ, "subscribes telemetry data")
+Rel(rulesEngineApp, tmQ, "subscribes telemetry data")
 
-Rel(monitoringApp, deviceTelemetryQ, "subscribes to telemetry data")
+Rel(monitoringApp, tmQ, "subscribes to telemetry data")
 Rel(monitoringApp, telemetryDB, "manage telemetry data")
 
 @enduml
