@@ -19,14 +19,15 @@ System_Boundary(wh, "WarmHouse SAAS") {
         Container(devMgmtApp, "Device Management App", "", "")
         ContainerDb(devMgmtDB, "Device DB", "PostgreSQL")
     }
-    
+    System_Boundary(m, "Data Processing") {
+        Container(monitoringApp, "Analytics/Monitoring App", "Python", "")
+        ContainerDb(telemetryDB, "TimeSeries DB", "TimescaleDB")
+    }
+
+    Container(rulesEngineApp, "Rule Engine", "", "")
     ContainerQueue(deviceTelemetryQ, "Device Telemetry Q", "MQTT", "")
     ContainerQueue(appEventsQ, "App Events Q", "Redis Streams")
     ContainerQueue(commandQ, "Command Q", "Redis Streams")
-    Container(rulesEngineApp, "Rule Engine", "", "")
-    Container(monitoringApp, "Analytics/Monitoring App", "Python", "")
-    ContainerDb(telemetryDB, "TimeSeries DB", "TimescaleDB")
-
 }
 
 Rel(user, api, "uses", "REST")
