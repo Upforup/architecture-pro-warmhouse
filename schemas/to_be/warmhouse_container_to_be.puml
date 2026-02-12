@@ -15,10 +15,12 @@ System_Boundary(wh, "WarmHouse SAAS") {
         Container(usersApp, "User Management App", "", "")
         ContainerDb(usersDB, "User DB", "PostgreSQL")
     }
+    
     System_Boundary(d, "Device Management") {
         Container(devMgmtApp, "Device Management App", "", "")
         ContainerDb(devMgmtDB, "Device DB", "PostgreSQL")
     }
+
     ContainerQueue(deviceTelemetryQ, "Device Telemetry Q", "MQTT")
     ContainerQueue(appEventsQ, "App Events Q", "Redis Streams")
     ContainerQueue(commandQ, "Command Q", "Redis Streams")
