@@ -1,0 +1,202 @@
+openapi: 3.0.3
+info:
+  title: Temperature API
+  description: |
+    External temperature data service for smart home automation.
+
+    This service provides simulated temperature readings for various locations and sensors.
+    Temperature values are randomly generated between 15°C and 30°C.
+
+    ## Location to Sensor ID Mapping
+
+    | Location | Sensor ID |
+    |----------|-----------|
+    | Living Room | 1 |
+    | Bedroom | 2 |
+    | Kitchen | 3 |
+    | Other | 0 |
+
+    ## Usage
+
+    This service is typically called by other smart home services to obtain real-time
+    temperature data for display or monitoring purposes.
+  version: 1.0.0
+  contact:
+    name: Temperature API Service
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:8081
+    description: Local development server
+  - url: http://temperature-api:8081
+    description: Docker internal service
+
+tags:
+  - name: health
+    description: Health check endpoints
+  - name: temperature
+    description: Temperature data operations
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      description: Check if the temperature API is running
+      tags:
+        - health
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
+  /temperature:
+    get:
+      summary: Get temperature by location
+      description: |
+        Retrieve temperature data for a specific location.
+
+        The temperature value is randomly generated between 15°C and 30°C each time
+        the endpoint is called. If the location matches a known room name (Living Room,
+        Bedroom, Kitchen), it will be associated with the corresponding sensor ID.
+      tags:
+        - temperature
+      parameters:
+        - name: location
+          in: query
+          description: Name of the location to get temperature for
+          required: false
+          schema:
+            type: string
+            enum: [Living Room, Bedroom, Kitchen]
+            example: Living Room
+      responses:
+        '200':
+          description: Temperature data retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TemperatureResponse'
+              example:
+                value: 22.5
+                unit: °C
+                timestamp: '2025-02-15T10:30:00Z'
+                location: Living Room
+                status: active
+                sensor_id: '1'
+                sensor_type: temperature
+                description: Description
+
+  /temperature/{id}:
+    get:
+      summary: Get temperature by sensor ID
+      description: |
+        Retrieve temperature data for a specific sensor by its ID.
+
+        The temperature value is randomly generated between 15°C and 30°C each time
+        the endpoint is called. Known sensor IDs (1, 2, 3) are mapped to specific locations.
+      tags:
+        - temperature
+      parameters:
+        - name: id
+          in: path
+          description: Sensor ID to get temperature for
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9]+$'
+            example: '1'
+      responses:
+        '200':
+          description: Temperature data retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TemperatureResponse'
+              example:
+                value: 20.8
+                unit: °C
+                timestamp: '2025-02-15T10:30:00Z'
+                location: Living Room
+                status: active
+                sensor_id: '1'
+                sensor_type: temperature
+                description: Description
+
+components:
+  schemas:
+    TemperatureResponse:
+      type: object
+      description: Temperature reading data from a sensor
+      properties:
+        value:
+          type: number
+          format: float64
+          description: Temperature reading value (randomly generated between 15-30°C)
+          minimum: 15.0
+          maximum: 30.0
+          example: 22.5
+        unit:
+          type: string
+          description: Unit of measurement
+          enum: [°C]
+          example: °C
+        timestamp:
+          type: string
+          format: date-time
+          description: When the temperature reading was generated
+          example: '2025-02-15T10:30:00Z'
+        location:
+          type: string
+          description: |
+            Human-readable location name
+
+            Mapped from sensor ID:
+            - ID "1" = "Living Room"
+            - ID "2" = "Bedroom"
+            - ID "3" = "Kitchen"
+            - Other = "Unknown"
+          enum: [Living Room, Bedroom, Kitchen, Unknown]
+          example: Living Room
+        status:
+          type: string
+          description: Sensor status (always active for this service)
+          enum: [active]
+          example: active
+        sensor_id:
+          type: string
+          description: |
+            Unique sensor identifier
+
+            Mapped from location:
+            - "Living Room" = "1"
+            - "Bedroom" = "2"
+            - "Kitchen" = "3"
+            - Other = "0"
+          pattern: '^[0-9]+$'
+          example: '1'
+        sensor_type:
+          type: string
+          description: Type of sensor (always temperature for this service)
+          enum: [temperature]
+          example: temperature
+        description:
+          type: string
+          description: Static description field (placeholder for future use)
+          example: Description
+      required:
+        - value
+        - unit
+        - timestamp
+        - location
+        - status
+        - sensor_id
+        - sensor_type
+        - description

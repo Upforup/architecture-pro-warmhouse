@@ -1,0 +1,55 @@
+@startuml warmhouse_component_monitoring_to_be
+title Warmhouse Component Diagram: Monitoring App (To-Be Architecture)
+
+top to bottom direction
+
+!include <C4/C4_Component>
+
+ContainerQueue_Ext(appEventQ, "Application Events Q","Redis Streams /Kafka", "Async messaging")
+Container_Ext(deviceMessageQ, "MQTT Broker","Eclipse Mosquitto/EMQX", "Device message broker")
+System_Ext(device, "IoT Device", "External")
+System_Ext(smartHome, "Smarthome", "External")
+
+Container_Ext(deviceManagementApp, "Device management App", "Java", "Responsible for actual device state management")
+
+
+Container_Boundary(c, "Monitoring App") {
+    Component(monitoringController, "Monitoring Controller", "HTTPS/REST", "Get stored device telemetry")
+    Component(telemetryEventListener, "Telemetry Event Listener", "MQTT", "Listen device telemetry events")
+    Component(deviceEventListener, "Device Lifecycle Event Listener", "Redis Streams /Kafka", "Listens device lifecycle events")
+
+    Component(telemetryService, "Telemetry Service", "internal", "Process telemetry events")
+    Component(deviceService, "Device Service", "internal", "decides which device events to listen and filter")
+    Component(telemetryCleanupService, "Telemetry Cleanup Service", "internal", "Scheduled clean up service")
+    Component(monitoringService, "Monitoring Service", "internal", "Process and prepare device telemetry")
+    Component(telemetryRepository, "Telemetry Repository", "JDBC", "Read and write device telemetry data")
+    Component(deviceRepository, "Device Repository", "JDBC", "Read and write device state")
+
+    ComponentDb(telemetryDB, "TimeSeries DB", "TimescaleDB - Stores time-series telemetry and device state data")
+
+    Component(legacyIntegrationService, "Legacy Integration Service", "scheduled", "Process legacy temperature sensor data.")
+
+}
+
+Rel(deviceManagementApp, appEventQ, "Publish device lifecycle events", "Redis Streams /Kafka")
+Rel(device, deviceMessageQ, "Publish telemetry events", "MQTT")
+Rel(telemetryEventListener, deviceMessageQ, "Subscribe device telemetry", "MQTT")
+Rel(telemetryEventListener, telemetryService, "Process device telemetry", "internal")
+Rel(telemetryService, telemetryRepository, "Save telemetry data", "Internal")
+Rel(telemetryRepository, telemetryDB, "Read and write telemetry data", "JDBC")
+Rel(telemetryCleanupService, telemetryRepository, "Clean up telemetry data", "Internal")
+
+Rel(monitoringController, monitoringService, "Get device telemetry", "HTTPS")
+Rel(monitoringService, telemetryRepository, "Read and aggregate telemetry data", "Internal")
+
+
+Rel(deviceEventListener, appEventQ, "Subscribe device lifecycle events", "Redis Streams /Kafka")
+Rel(deviceEventListener, deviceService, "Manage device state (for monitoring purpose)", "Internal")
+Rel(deviceService, deviceRepository, "Persist device state", "internal")
+Rel(deviceRepository, telemetryDB, "Persist device state", "JDBC")
+
+Rel(legacyIntegrationService, smartHome, "Get sensor info", "HTTPS/REST")
+Rel(legacyIntegrationService, telemetryRepository, "Persist device telemetry", "JDBC")
+Rel(legacyIntegrationService, deviceRepository, "Persist device state", "JDBC")
+
+@enduml

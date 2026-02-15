@@ -1,0 +1,120 @@
+@startuml warmhouse_er_monitoring_to_be
+title Warmhouse ER Diagram: Monitoring App (To-Be Architecture)
+hide empty members
+top to bottom direction
+
+
+
+entity "telemetry_data" <<ENTITY, TIMESCALE>> {
+  * id : BIGINT <<generated>>
+  --
+  * device_id : VARCHAR(36)
+  * value : DOUBLE PRECISION
+  * unit : VARCHAR(20)
+  * timestamp : TIMESTAMPTZ <<NOT NULL>>
+  * metadata : JSONB
+  --
+  @@ id (PK)
+  @@ idx_device_timestamp (device_id, timestamp)
+  @@ idx_timestamp (timestamp)
+  @@ CONSTRAINT fk_device FOREIGN KEY (device_id) REFERENCES device_registry(device_id)
+}
+
+entity "aggregated_metrics_hourly" <<ENTITY, TIMESCALE, MATERIALIZED>> {
+  * id : BIGINT <<generated>>
+  --
+  * device_id : VARCHAR(36)
+  * time_bucket : TIMESTAMPTZ <<NOT NULL>>
+  * avg_value : DOUBLE PRECISION
+  * min_value : DOUBLE PRECISION
+  * max_value : DOUBLE PRECISION
+  * sample_count : INTEGER
+  * std_dev : DOUBLE PRECISION
+  --
+  @@ id (PK)
+  @@ uq_device_time (device_id, time_bucket)
+  @@ idx_time_bucket (time_bucket)
+}
+
+entity "aggregated_metrics_daily" <<ENTITY, TIMESCALE, MATERIALIZED>> {
+  * id : BIGINT <<generated>>
+  --
+  * device_id : VARCHAR(36)
+  * date_bucket : DATE <<NOT NULL>>
+  * avg_value : DOUBLE PRECISION
+  * min_value : DOUBLE PRECISION
+  * max_value : DOUBLE PRECISION
+  * sample_count : INTEGER
+  * std_dev : DOUBLE PRECISION
+  --
+  @@ id (PK)
+  @@ uq_device_date (device_id, date_bucket)
+  @@ idx_date_bucket (date_bucket)
+}
+
+entity "device_registry" <<ENTITY, RELATION>> {
+  * device_id : VARCHAR(36) <<PK>>
+  --
+  * name : VARCHAR(100) <<NOT NULL>>
+  * type : VARCHAR(50) <<NOT NULL>>
+  * status : VARCHAR(20) <<NOT NULL>>
+  * location : VARCHAR(100)
+  * last_seen : TIMESTAMPTZ
+  * properties : JSONB
+  * created_at : TIMESTAMPTZ <<NOT NULL>>
+  * updated_at : TIMESTAMPTZ
+  --
+  @@ device_id (PK)
+  @@ idx_status (status)
+  @@ idx_type (type)
+  @@ idx_location (location)
+}
+
+entity "device_metadata" <<ENTITY, RELATION>> {
+  * id : BIGINT <<generated>>
+  --
+  * device_id : VARCHAR(36) <<NOT NULL>>
+  * key : VARCHAR(100) <<NOT NULL>>
+  * value : TEXT
+  * created_at : TIMESTAMPTZ <<NOT NULL>>
+  --
+  @@ id (PK)
+  @@ uq_device_key (device_id, key)
+  @@ CONSTRAINT fk_device_registry FOREIGN KEY (device_id) REFERENCES device_registry(device_id)
+  ON DELETE CASCADE
+}
+
+telemetry_data }|--|| device_registry : device_id
+"telemetry_data" -- device_registry : FK: device_id references device_registry(device_id)
+
+aggregated_metrics_hourly }|--|| device_registry : device_id
+"aggregated_metrics_hourly" -- device_registry : FK: device_id references device_registry(device_id)
+
+aggregated_metrics_daily }|--|| device_registry : device_id
+"aggregated_metrics_daily" -- device_registry : FK: device_id references device_registry(device_id)
+
+device_metadata }|--|| device_registry : device_id
+"device_metadata" -- device_registry : FK: device_id references device_registry(device_id)\nON DELETE CASCADE
+
+note right of telemetry_data
+  **Hypertable Options**
+  - chunk_time_interval: 1 day
+  - compression: gzip
+  - retention_policy: 90 days default
+end note
+
+note right of device_registry
+  **Reference Table**
+  - Stores device metadata
+  - Low write frequency
+  - High read frequency
+end note
+
+note right of aggregated_metrics_hourly
+  **Materialized View**
+  - Refresh: CONTINUOUS
+  - Time bucket: 1 hour
+  - Used for dashboard queries
+end note
+
+@enduml

@@ -1,0 +1,57 @@
+@startuml warmhouse_container_to_be
+title Warmhouse Container Diagram (To-Be Architecture)
+
+top to bottom direction
+
+!include <C4/C4_Container>
+
+Person(user, "Customer", "")
+System(device, "Device")
+
+System_Boundary(wh, "WarmHouse SAAS") {
+    Container(api, "API Gateway", "", "Entry point for customers")
+ 
+    Container_Boundary(u, "User Management") {
+        Container(usersApp, "User Management App", "", "")
+        ContainerDb(usersDB, "User DB", "PostgreSQL")
+    }
+    Container_Boundary(d, "Device Management") {
+        Container(devMgmtApp, "Device Management App", "", "")
+        ContainerDb(devMgmtDB, "Device DB", "PostgreSQL")
+    }
+    Container_Boundary(m, "Data Processing") {
+        Container(monitoringApp, "Analytics/Monitoring App", "Python", "")
+        ContainerDb(telemetryDB, "TimeSeries DB", "TimescaleDB")
+    }
+
+    Container(rulesEngineApp, "Rule Engine", "", "")
+    ContainerQueue(tmQ, "Device Telemetry Q", "MQTT")
+    ContainerQueue(appEventsQ, "App Events Q", "Redis Streams")
+    ContainerQueue(commandQ, "Command Q", "MQTT")
+}
+
+Rel(user, api, "uses", "HTTPS/REST")
+Rel(device, tmQ, "publishes telemetry")
+Rel(device, commandQ, "subscribes commands")
+
+Rel(api, usersApp, "registers/authenticates", "HTTPS/REST")
+Rel(api, devMgmtApp, "adds/configures device", "HTTPS/REST")
+Rel(api, monitoringApp, "views telemetry data", "HTTPS/REST")
+
+Rel(devMgmtApp, device, "provisioning", "")
+
+Rel(devMgmtApp, devMgmtDB, "stores/queries device data")
+Rel(usersApp, usersDB, "stores/queries user data")
+
+Rel(devMgmtApp, appEventsQ, "publishes device-related events (created, configured)", "")
+Rel(rulesEngineApp, appEventsQ, "subscribes device-related events", "")
+Rel(rulesEngineApp, commandQ, "publishes command events", "")
+Rel(rulesEngineApp, devMgmtApp, "reads device info for rule evaluation", "")
+Rel(rulesEngineApp, usersApp, "reads user info for rule evaluation", "")
+
+Rel(rulesEngineApp, tmQ, "subscribes telemetry data")
+
+Rel(monitoringApp, tmQ, "subscribes to telemetry data")
+Rel(monitoringApp, telemetryDB, "manage telemetry data")
+
+@enduml

@@ -1,0 +1,216 @@
+@startuml warmhouse_code_monitoring_to_be
+title Warmhouse Code Diagram: Monitoring App (To-Be Architecture)
+
+top to bottom direction
+
+class MonitoringController << @RestController >> {
+  -MonitoringService monitoringService
+  -DeviceService deviceService
+  +getTelemetry(deviceId: String, from: DateTime, to: DateTime): ResponseEntity<TelemetryDTO>
+  +getLatestTelemetry(deviceId: String): ResponseEntity<TelemetryDTO>
+  +getAggregatedMetrics(deviceId: String, aggregation: String): ResponseEntity<MetricsDTO>
+}
+
+class TelemetryService << @Service >> {
+  -TelemetryRepository telemetryRepository
+  -DeviceRepository deviceRepository
+  +processTelemetry(event: TelemetryEvent): void
+  +validateTelemetry(data: TelemetryData): boolean
+  +enrichWithDeviceMetadata(data: TelemetryData, deviceId: String): TelemetryData
+}
+
+class MonitoringService << @Service >> {
+  -TelemetryRepository telemetryRepository
+  -AggregationService aggregationService
+  +getDeviceTelemetry(deviceId: String, from: DateTime, to: DateTime): List<TelemetryData>
+  +getLatestTelemetry(deviceId: String): Optional<TelemetryData>
+  +getAggregatedMetrics(deviceId: String, type: AggregationType): MetricsDTO
+  +buildTimeSeriesQuery(deviceId: String, from: DateTime, to: DateTime): Query
+}
+
+class DeviceService << @Service >> {
+  -DeviceRepository deviceRepository
+  -DeviceStateTracker stateTracker
+  +handleLifecycleEvent(event: DeviceLifecycleEvent): void
+  +shouldProcessEvent(event: DeviceLifecycleEvent): boolean
+  +updateDeviceState(deviceId: String, status: DeviceStatus): void
+}
+
+class TelemetryCleanupService << @ScheduledService >> {
+  -TelemetryRepository telemetryRepository
+  -RetentionPolicy retentionPolicy
+  +cleanupExpiredTelemetry(): void
+  +cleanupByDeviceId(deviceId: String): void
+  +getCleanupStats(): CleanupStats
+}
+
+class AggregationService << @Service >> {
+  -TelemetryRepository telemetryRepository
+  +computeHourlyMetrics(deviceId: String, timestamp: DateTime): void
+  +computeDailyMetrics(deviceId: String, date: LocalDate): void
+  +getMetricsSummary(deviceId: String, period: Period): MetricsSummary
+}
+
+class TelemetryEventListener << @Component >> {
+  -MqttClient mqttClient
+  -TelemetryService telemetryService
+  -MessageConverter converter
+  +onTelemetryMessage(message: MqttMessage): void
+  +connectToBroker(): void
+  +subscribeToTopics(): void
+  +handleConnectionLost(): void
+}
+
+class DeviceEventListener << @Component >> {
+  -KafkaTemplate<String, DeviceLifecycleEvent> kafkaTemplate
+  -DeviceService deviceService
+  -JsonDeserializer deserializer
+  +onLifecycleEvent(event: DeviceLifecycleEvent): void
+  +handleDeserializationError(error: Exception): void
+}
+
+interface TelemetryRepository << @Repository >> {
+  +save(data: TelemetryData): TelemetryData
+  +saveAll(data: List<TelemetryData>): List<TelemetryData>
+  +findByDeviceIdAndTimeRange(deviceId: String, from: DateTime, to: DateTime): List<TelemetryData>
+  +findLatestByDeviceId(deviceId: String): Optional<TelemetryData>
+  +deleteOlderThan(timestamp: DateTime): int
+  +findByDeviceIdAndAggregation(deviceId: String, type: AggregationType): List<AggregatedMetrics>
+}
+
+interface DeviceRepository << @Repository >> {
+  +save(device: Device): Device
+  +findById(deviceId: String): Optional<Device>
+  +findByStatus(status: DeviceStatus): List<Device>
+  +updateStatus(deviceId: String, status: DeviceStatus): void
+}
+
+class TelemetryData << @Entity >> {
+  -Long id
+  -String deviceId
+  -Double value
+  -String unit
+  -DateTime timestamp
+  -Map<String, Object> metadata
+  +getId(): Long
+  +getDeviceId(): String
+  +getValue(): Double
+  +getUnit(): String
+  +getTimestamp(): DateTime
+  +getMetadata(): Map<String, Object>
+}
+
+class Device << @Entity >> {
+  -String deviceId
+  -String name
+  -DeviceType type
+  -DeviceStatus status
+  -DateTime lastSeen
+  -Map<String, String> properties
+  +getDeviceId(): String
+  +getStatus(): DeviceStatus
+  +updateStatus(status: DeviceStatus): void
+}
+
+class TelemetryEvent << @Record >> {
+  -String deviceId
+  -Double value
+  -String unit
+  -Long timestamp
+  -Map<String, Object> metadata
+}
+
+class DeviceLifecycleEvent << @Record >> {
+  -String deviceId
+  -LifecycleEventType eventType
+  -Long timestamp
+  -Map<String, Object> metadata
+}
+
+' ==================== DTOs ====================
+
+class TelemetryDTO << @Data >> {
+  -String deviceId
+  -Double value
+  -String unit
+  -DateTime timestamp
+}
+
+class DeviceStatusDTO << @Data >> {
+  -String deviceId
+  -String status
+  -DateTime lastSeen
+}
+
+class MetricsDTO << @Data >> {
+  -String deviceId
+  -Double average
+  -Double min
+  -Double max
+  -Long count
+}
+
+' ==================== ENUMS ====================
+
+enum DeviceStatus {
+  ONLINE
+  OFFLINE
+  MAINTENANCE
+  ERROR
+}
+
+enum LifecycleEventType {
+  DEVICE_ADDED
+  DEVICE_REMOVED
+  DEVICE_UPDATED
+  DEVICE_ONLINE
+  DEVICE_OFFLINE
+}
+
+enum AggregationType {
+  HOURLY
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+' ==================== RELATIONSHIPS ====================
+
+' Controller dependencies
+MonitoringController ..> MonitoringService : uses
+MonitoringController ..> DeviceService : uses
+
+' Service dependencies
+TelemetryService ..> TelemetryRepository : uses
+TelemetryService ..> DeviceRepository : uses
+MonitoringService ..> TelemetryRepository : uses
+MonitoringService ..> AggregationService : uses
+DeviceService ..> DeviceRepository : uses
+TelemetryCleanupService ..> TelemetryRepository : uses
+AggregationService ..> TelemetryRepository : uses
+
+' Event listener dependencies
+TelemetryEventListener ..> TelemetryService : uses
+DeviceEventListener ..> DeviceService : uses
+
+' Repository implementations
+TelemetryRepository ..|> TelemetryData : manages
+DeviceRepository ..|> Device : manages
+
+' Domain relationships
+TelemetryService ..> TelemetryData : creates
+TelemetryService ..> TelemetryEvent : processes
+DeviceService ..> Device : manages
+DeviceService ..> DeviceLifecycleEvent : processes
+
+' DTO relationships
+MonitoringController ..> TelemetryDTO : returns
+MonitoringController ..> DeviceStatusDTO : returns
+MonitoringController ..> MetricsDTO : returns
+
+' Enum usage
+Device --> DeviceStatus
+DeviceLifecycleEvent --> LifecycleEventType
+AggregationService --> AggregationType
+
+@enduml
