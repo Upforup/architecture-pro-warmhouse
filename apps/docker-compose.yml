@@ -9,6 +9,7 @@ services:
       - smarthome-network
     volumes:
       - ./smart_home/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./monitoring/src/main/resources/schema.sql:/docker-entrypoint-initdb.d/schema.sql
     healthcheck:
         test: ["CMD-SHELL", "pg_isready -U postgres"]
         interval: 5s
@@ -51,6 +52,27 @@ services:
 
     ports:
       - "8080:8080"
+    restart: unless-stopped
+    networks:
+      - smarthome-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${PORT}/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  monitoring-app:
+    build:
+      context: .
+      dockerfile: monitoring/Dockerfile
+    container_name: monitoring-app
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/monitoring
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=password
+      - PORT=8082
+    ports:
+      - "8082:8082"
     restart: unless-stopped
     networks:
       - smarthome-network

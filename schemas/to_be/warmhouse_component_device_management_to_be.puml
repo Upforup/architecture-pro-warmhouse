@@ -1,0 +1,39 @@
+@startuml warmhouse_component_device_management_to_be
+title Warmhouse Component Diagram: Device Management App (To-Be Architecture)
+
+top to bottom direction
+
+!include <C4/C4_Component>
+
+ContainerQueue_Ext(appEventQ, "Application Events Q","Redis Streams /Kafka", "Async messaging")
+Container_Ext(rulesApp, "Rules Engine", "Java", "Responsible for actual rule interpretation and command execution")
+System_Ext(device, "IoT device", "External")
+
+Container_Boundary(c, "Device Management App") {
+    Component(deviceLifecycleController, "Device Lifecycle Controller", "HTTPS/REST", "Used to add new devices")
+    Component(deviceRulesController, "Device Rules Controller", "HTTPS/REST", "Used to configure triggers and scenarios")
+
+    Component(deviceManagementService, "Device Management Service", "Service Pattern", "Manages device state")
+    Component(rulesManagementService, "Rules Management Service", "Service Pattern", "Manages rules and triggers")
+
+    Component(deviceRepository, "Device Repository", "Repository Pattern", "Persists and retrieves device data")
+    Component(deviceRulesRepository, "Rules Repository", "Repository Pattern", "Persists and retrieves rules and triggers")
+
+    ComponentDb(deviceDb, "Device Database", "PostgreSQL", "Stores device info, rules, triggers")
+}
+
+Rel(deviceLifecycleController, deviceManagementService, "Add new device", "HTTPS")
+Rel(deviceManagementService, deviceRepository, "Save device info", "internal")
+Rel(deviceRepository, deviceDb, "Persist device info", "JDBC")
+Rel(deviceManagementService, appEventQ, "Publish 'On Device Added' event", "internal")
+
+Rel(deviceRulesController, rulesManagementService, "Configure rule/trigger", "HTTPS")
+Rel(rulesManagementService, deviceRulesRepository, "Save rule/trigger info", "internal")
+Rel(deviceRulesRepository, deviceDb, "Persist rule info", "JDBC")
+Rel(rulesManagementService, appEventQ, "Publish 'On Rule Added' event", "internal")
+
+Rel(rulesApp, appEventQ, "Subscribes on events")
+Rel(rulesApp, device, "Executes commands on devices", "internal")
+
+
+@enduml

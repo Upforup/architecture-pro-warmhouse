@@ -11,31 +11,32 @@ System(device, "Device")
 System_Boundary(wh, "WarmHouse SAAS") {
     Container(api, "API Gateway", "", "Entry point for customers")
  
-    System_Boundary(u, "User Management") {
+    Container_Boundary(u, "User Management") {
         Container(usersApp, "User Management App", "", "")
         ContainerDb(usersDB, "User DB", "PostgreSQL")
     }
-    System_Boundary(d, "Device Management") {
+    Container_Boundary(d, "Device Management") {
         Container(devMgmtApp, "Device Management App", "", "")
         ContainerDb(devMgmtDB, "Device DB", "PostgreSQL")
     }
-    System_Boundary(m, "Data Processing") {
+    Container_Boundary(m, "Data Processing") {
         Container(monitoringApp, "Analytics/Monitoring App", "Python", "")
         ContainerDb(telemetryDB, "TimeSeries DB", "TimescaleDB")
     }
 
     Container(rulesEngineApp, "Rule Engine", "", "")
-    ContainerQueue(tmQ, "Device Telemetry Q")
+    ContainerQueue(tmQ, "Device Telemetry Q", "MQTT")
     ContainerQueue(appEventsQ, "App Events Q", "Redis Streams")
-    ContainerQueue(commandQ, "Command Q", "Redis Streams")
+    ContainerQueue(commandQ, "Command Q", "MQTT")
 }
 
-Rel(user, api, "uses", "REST")
+Rel(user, api, "uses", "HTTPS/REST")
 Rel(device, tmQ, "publishes telemetry")
-Rel(api, usersApp, "registers/authenticates", "REST")
-Rel(api, devMgmtApp, "adds/configures device", "REST")
-Rel(api, usersApp, "configures subscription", "REST")
-Rel(api, monitoringApp, "views telemetry data", "REST")
+Rel(device, commandQ, "subscribes commands")
+
+Rel(api, usersApp, "registers/authenticates", "HTTPS/REST")
+Rel(api, devMgmtApp, "adds/configures device", "HTTPS/REST")
+Rel(api, monitoringApp, "views telemetry data", "HTTPS/REST")
 
 Rel(devMgmtApp, device, "provisioning", "")
 
@@ -48,7 +49,6 @@ Rel(rulesEngineApp, commandQ, "publishes command events", "")
 Rel(rulesEngineApp, devMgmtApp, "reads device info for rule evaluation", "")
 Rel(rulesEngineApp, usersApp, "reads user info for rule evaluation", "")
 
-Rel(devMgmtApp, commandQ, "subscribes to command events")
 Rel(rulesEngineApp, tmQ, "subscribes telemetry data")
 
 Rel(monitoringApp, tmQ, "subscribes to telemetry data")

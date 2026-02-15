@@ -104,13 +104,29 @@
 
 Добавьте диаграмму для каждого из выделенных микросервисов.
 
+[warmhouse_component_user_management_to_be](schemas/to_be/warmhouse_component_user_management_to_be.puml)
+
+![](./schemas/to_be/warmhouse_component_user_management_to_be.png)
+
+[warmhouse_component_device_management_to_be](schemas/to_be/warmhouse_component_device_management_to_be.puml)
+
+![](./schemas/to_be/warmhouse_component_device_management_to_be.png)
+
+[warmhouse_component_monitoring_to_be](schemas/to_be/warmhouse_component_monitoring_to_be.puml)
+
+![](./schemas/to_be/warmhouse_component_monitoring_to_be.png)
+
+
 **Диаграмма кода (Code)**
 
-Добавьте одну диаграмму или несколько.
+![](./schemas/to_be/warmhouse_code_monitoring_to_be.png)
 
 # Задание 3. Разработка ER-диаграммы
 
 Добавьте сюда ER-диаграмму. Она должна отражать ключевые сущности системы, их атрибуты и тип связей между ними.
+
+[twarmhouse_er_monitoring_to_bet](schemas/to_be/warmhouse_er_monitoring_to_be.puml)
+![](schemas/to_be/warmhouse_er_monitoring_to_be.png)
 
 # Задание 4. Создание и документирование API
 
@@ -118,13 +134,15 @@
 
 Укажите, какой тип API вы будете использовать для взаимодействия микросервисов. Объясните своё решение.
 
-- Для взаимодействия клиента с системой: REST
+- Для взаимодействия клиента с системой: HTTPS/REST
 - Взаимодействия устрйств с микросервисами: Publish/Subscribe, например MQTT 
-- Взаимодействие между микросервисами может быть REST или Publish/Subscribe 
+- Взаимодействие между микросервисами может быть REST или Publish/Subscribe (Redis Streams/Kafka)
 
 ### 2. Документация API
 
 Здесь приложите ссылки на документацию API для микросервисов, которые вы спроектировали в первой части проектной работы. Для документирования используйте Swagger/OpenAPI или AsyncAPI.
+
+[Monitoring app api](./schemas/to_be/monitoring-api-openapi.yaml)
 
 # Задание 5. Работа с docker и docker-compose
 
@@ -132,11 +150,4 @@ Done
 
 # **Задание 6. Разработка MVP**
 
-Необходимо создать новые микросервисы и обеспечить их интеграции с существующим монолитом для плавного перехода к микросервисной архитектуре. 
-
-### **Что нужно сделать**
-
-1. Создайте новые микросервисы для управления телеметрией и устройствами (с простейшей логикой), которые будут интегрированы с существующим монолитным приложением. Каждый микросервис на своем ООП языке.
-2. Обеспечьте взаимодействие между микросервисами и монолитом (при желании с помощью брокера сообщений), чтобы постепенно перенести функциональность из монолита в микросервисы. 
-
-В результате у вас должны быть созданы Dockerfiles и docker-compose для запуска микросервисов. 
+Done.

@@ -1,0 +1,32 @@
+@startuml warmhouse_component_user_management_to_be
+title Warmhouse Component Diagram: User Management App (To-Be Architecture)
+
+top to bottom direction
+
+!include <C4/C4_Component>
+
+ComponentDb(usersDb, "User Database", "PostgreSQL", "Stores user registration information, hashed authentication credentials")
+
+Container_Boundary(c, "User Management App") {
+    Component(signInController, "Sign-In Controller", "HTTPS/REST", "Authenticates users and issues tokens")
+    Component(signUpController, "Sign-Up Controller", "HTTPS/REST", "Handles new user registration")
+    Component(authService, "Authentication Service", "Java Service", "Validates credentials, issues JWT tokens")
+    Component(passwordService, "Password Service", "Security Component", "Hashes passwords, validates strength")
+    Component(tokenService, "Token Service", "JWT/OAuth2", "Generates, validates, and refreshes tokens")
+    Component(userRepository, "User Repository", "Repository Pattern", "Persists and retrieves user data")
+}
+
+' User Authentication Flow
+Rel(signInController, authService, "Validate credentials", "HTTPS")
+Rel(authService, passwordService, "Verify password", "Internal")
+Rel(authService, tokenService, "Issue JWT token", "Internal")
+Rel(tokenService, usersDb, "Store/revoke tokens", "JDBC")
+
+' User Registration Flow
+Rel(signUpController, passwordService, "Hash password", "Internal")
+Rel(signUpController, userRepository, "Create user record", "Internal")
+Rel(userRepository, usersDb, "Read & write", "JDBC")
+
+Rel(authService, userRepository, "Fetch user details", "Internal")
+
+@enduml
